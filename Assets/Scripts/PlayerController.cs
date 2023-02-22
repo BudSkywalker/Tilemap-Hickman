@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityStandardAssets.CrossPlatformInput;
+using Cinemachine;
 
 [RequireComponent(typeof(Animator))]
 [RequireComponent(typeof(Rigidbody2D))]
@@ -24,6 +25,8 @@ public class PlayerController : MonoBehaviour
     float projectileSpeed = 1000f;
     [SerializeField]
     TMP_Text livesDisplay, enemiesDisplay;
+    [SerializeField]
+    CinemachineVirtualCamera cvc;
 
     public short Lives
     {
@@ -150,6 +153,25 @@ public class PlayerController : MonoBehaviour
         }
     }
 
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if(other.CompareTag("Room Bounds"))
+        {
+            cvc = other.GetComponentInChildren<CinemachineVirtualCamera>();
+            cvc.Priority = 10;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag("Room Bounds"))
+        {
+
+            cvc = other.GetComponentInChildren<CinemachineVirtualCamera>();
+            cvc.Priority = 1;
+        }
+    }
+
     void Jump()
     {
         if (isGrounded)
@@ -189,6 +211,7 @@ public class PlayerController : MonoBehaviour
         GameObject go = Instantiate(projectile, transform.position, transform.rotation);
         go.GetComponent<Rigidbody2D>().AddForce(new Vector2(power, 0));
         StartCoroutine(KillBullet(go));
+        StartCoroutine(ShakeCam(cvc));
     }
 
     IEnumerator KillBullet(GameObject bullet)
@@ -196,6 +219,19 @@ public class PlayerController : MonoBehaviour
         yield return new WaitForSeconds(1.5f);
         Destroy(bullet);
     }
+
+    //I know I'm getting lazy on the names I don't feel great just trying to get this assignment done
+    IEnumerator ShakeCam(CinemachineVirtualCamera c)
+    {
+        CinemachineBasicMultiChannelPerlin shake = c.GetCinemachineComponent<CinemachineBasicMultiChannelPerlin>();
+        shake.m_AmplitudeGain = 1;
+        while(shake.m_AmplitudeGain > 0)
+        {
+            yield return new WaitForEndOfFrame();
+            shake.m_AmplitudeGain -= 0.05f;
+        }
+    }
+
 
     private void GameOver(bool didWin)
     {
